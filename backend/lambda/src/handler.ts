@@ -74,6 +74,14 @@ const typeDefs = `#graphql
 
 const resolvers = {
   Query: {
+    health: () => 'ok',
+    tasks: async () => {
+      const db = await getPool();
+      const result = await db.query(
+        'SELECT id, title, done, created_at FROM tasks ORDER BY id DESC LIMIT 50'
+      );
+      return result.rows.map(toTask);
+    },
     stats: async () => {
       const res = await fetch(process.env.PRIVATE_GRAPHQL_URL as string, {
         method: 'POST',
