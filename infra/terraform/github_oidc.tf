@@ -26,9 +26,9 @@ data "aws_iam_policy_document" "github_trust" {
     }
 
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+      values   = ["repo:Ajmeerkaja@114648295/graphql-serverless@1471722459:ref:refs/heads/main"]
     }
   }
 }
