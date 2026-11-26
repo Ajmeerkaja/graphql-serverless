@@ -9,3 +9,9 @@ variable "project" {
   type        = string
   default     = "graphql-serverless"
 }
+
+variable "vpc_cidr" {
+  description = "IP range for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
