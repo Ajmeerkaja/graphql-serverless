@@ -1,5 +1,7 @@
+import express from 'express';
+import cors from 'cors';
 import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
+import { expressMiddleware } from '@apollo/server/express4';
 import pg from 'pg';
 
 // DB settings arrive as environment variables. The password is injected by ECS
@@ -40,5 +42,15 @@ const resolvers = {
 };
 
 const server = new ApolloServer({ typeDefs, resolvers });
-const { url } = await startStandaloneServer(server, { listen: { port: 4000 } });
-console.log(`GraphQL server ready at ${url}`);
+await server.start();
+
+const app = express();
+
+// Plain health endpoint for the load balancer (does not touch the database)
+app.get('/health', (_req, res) => res.status(200).send('ok'));
+
+app.use('/graphql', cors(), express.json(), expressMiddleware(server));
+
+app.listen(4000, '0.0.0.0', () => {
+  console.log('GraphQL server ready on port 4000 at /graphql');
+});

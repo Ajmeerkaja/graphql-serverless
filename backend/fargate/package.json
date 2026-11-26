@@ -12,6 +12,8 @@
   "type": "module",
   "dependencies": {
     "@apollo/server": "^4.13.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
     "graphql": "^16.15.0",
     "pg": "^8.23.1"
   }
