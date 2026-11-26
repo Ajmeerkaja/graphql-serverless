@@ -56,9 +56,15 @@ const typeDefs = `#graphql
     createdAt: String!
   }
 
+  type Stats {
+    total: Int!
+    done: Int!
+  }
+
   type Query {
     health: String!
     tasks: [Task!]!
+    stats: Stats!
   }
 
   type Mutation {
@@ -68,13 +74,16 @@ const typeDefs = `#graphql
 
 const resolvers = {
   Query: {
-    health: () => 'ok',
-    tasks: async () => {
-      const db = await getPool();
-      const result = await db.query(
-        'SELECT id, title, done, created_at FROM tasks ORDER BY id DESC LIMIT 50'
-      );
-      return result.rows.map(toTask);
+    stats: async () => {
+      const res = await fetch(process.env.PRIVATE_GRAPHQL_URL as string, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: '{ stats { total done } }' }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const json = (await res.json()) as any;
+      if (json.errors) throw new GraphQLError('Private GraphQL server returned an error');
+      return json.data.stats;
     },
   },
   Mutation: {

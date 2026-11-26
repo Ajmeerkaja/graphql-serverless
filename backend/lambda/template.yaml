@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: GraphQL API on Lambda connected to a private RDS database
+Description: GraphQL API and health check on Lambda, connected to a private RDS database and a private Fargate server
 
 Parameters:
   Subnet1Id:
@@ -12,6 +12,8 @@ Parameters:
   DbHost:
     Type: String
   DbSecretArn:
+    Type: String
+  PrivateGraphqlUrl:
     Type: String
 
 Globals:
@@ -28,7 +30,7 @@ Resources:
       CorsConfiguration:
         AllowOrigins: ['*']
         AllowHeaders: ['content-type']
-        AllowMethods: ['POST', 'OPTIONS']
+        AllowMethods: ['POST', 'GET', 'OPTIONS']
 
   GraphQLFunction:
     Type: AWS::Serverless::Function
@@ -55,6 +57,7 @@ Resources:
           DB_HOST: !Ref DbHost
           DB_NAME: appdb
           DB_SECRET_ARN: !Ref DbSecretArn
+          PRIVATE_GRAPHQL_URL: !Ref PrivateGraphqlUrl
       Policies:
         - Statement:
             - Effect: Allow
@@ -68,6 +71,39 @@ Resources:
             Path: /graphql
             Method: POST
 
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/health.ts
+    Properties:
+      CodeUri: .
+      Handler: health.handler
+      Timeout: 10
+      MemorySize: 256
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSgId
+        SubnetIds:
+          - !Ref Subnet1Id
+          - !Ref Subnet2Id
+      Environment:
+        Variables:
+          PRIVATE_GRAPHQL_URL: !Ref PrivateGraphqlUrl
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /health
+            Method: GET
+
 Outputs:
   ApiUrl:
     Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/graphql'
+  HealthUrl:
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/health'
