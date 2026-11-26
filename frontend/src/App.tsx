@@ -20,33 +20,36 @@ export default function App() {
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-
-  async function load() {
-    try {
-      const data = await gql<{ tasks: Task[] }>('{ tasks { id title done createdAt } }');
-      setTasks(data.tasks);
-      setError('');
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    load();
-  }, []);
+    let cancelled = false;
+
+    gql<{ tasks: Task[] }>('{ tasks { id title done createdAt } }')
+      .then((data) => {
+        if (cancelled) return;
+        setTasks(data.tasks);
+        setError('');
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   async function add(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
     try {
-      await gql(
-        'mutation Add($title: String!) { addTask(title: $title) { id } }',
-        { title }
-      );
+      await gql('mutation Add($title: String!) { addTask(title: $title) { id } }', { title });
       setTitle('');
-      await load();
+      setReloadKey((k) => k + 1);
     } catch (err) {
       setError((err as Error).message);
     }
