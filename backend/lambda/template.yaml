@@ -72,11 +72,6 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /graphql
             Method: POST
-      AutoPublishAlias: live
-      DeploymentPreference:
-        Type: Canary10Percent5Minutes
-        Alarms:
-          - !Ref GraphQLErrorsAlarm
 
   HealthFunction:
     Type: AWS::Serverless::Function
@@ -108,11 +103,6 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /health
             Method: GET
-      AutoPublishAlias: live
-      DeploymentPreference:
-        Type: Canary10Percent5Minutes
-        Alarms:
-          - !Ref HealthErrorsAlarm
   GraphQLErrorsAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
