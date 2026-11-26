@@ -162,3 +162,7 @@ vite.config.ts.timestamp-*
 *.tfstate.*
 crash.log
 *.tfvars
+
+# SAM and build output
+.aws-sam/
+dist/
