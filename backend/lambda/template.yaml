@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: GraphQL API on Lambda connected to a private RDS database
+
+Parameters:
+  Subnet1Id:
+    Type: String
+  Subnet2Id:
+    Type: String
+  LambdaSgId:
+    Type: String
+  DbHost:
+    Type: String
+  DbSecretArn:
+    Type: String
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Architectures: [arm64]
+    MemorySize: 512
+    Timeout: 20
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: ['content-type']
+        AllowMethods: ['POST', 'OPTIONS']
+
+  GraphQLFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        External:
+          - pg-native
+        EntryPoints:
+          - src/handler.ts
+    Properties:
+      CodeUri: .
+      Handler: handler.handler
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSgId
+        SubnetIds:
+          - !Ref Subnet1Id
+          - !Ref Subnet2Id
+      Environment:
+        Variables:
+          DB_HOST: !Ref DbHost
+          DB_NAME: appdb
+          DB_SECRET_ARN: !Ref DbSecretArn
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref DbSecretArn
+      Events:
+        GraphQL:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /graphql
+            Method: POST
+
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/graphql'

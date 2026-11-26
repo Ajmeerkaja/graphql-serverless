@@ -1,0 +1,11 @@
+version = 0.1
+
+[default.global.parameters]
+stack_name = "graphql-serverless-api"
+
+[default.deploy.parameters]
+region = "ap-south-1"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+resolve_s3 = true
+parameter_overrides = "Subnet1Id=subnet-05f8db92f9cb9d6aa Subnet2Id=subnet-04197fc37e73541b2 LambdaSgId=sg-07112e653c3f914b5 DbHost=graphql-serverless-db.c70wisgcw83n.ap-south-1.rds.amazonaws.com DbSecretArn=arn:aws:secretsmanager:ap-south-1:741452524980:secret:rds!db-6b673025-f751-4bfe-8e9e-ae87b8513f4e-qQ5UBo"
